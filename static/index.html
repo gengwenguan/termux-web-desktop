@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Termux Web Desktop</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+    <link rel="stylesheet" href="/css/style.css?v=nodeskicon-v1-20260913">
+</head>
+<body>
+    <!-- 顶部状态栏 -->
+    <div id="topbar">
+        <div class="topbar-left">
+            <span class="topbar-btn" id="activities-btn">活动</span>
+        </div>
+        <div class="topbar-center" id="topbar-title">Termux Web Desktop</div>
+        <div class="topbar-right">
+            <span class="topbar-icon">📶</span>
+            <span class="topbar-icon">🔊</span>
+            <span class="topbar-icon" id="battery-icon">🔋</span>
+            <span class="topbar-time" id="clock">--:--</span>
+        </div>
+    </div>
+
+    <!-- 左侧 Dock -->
+    <div id="dock">
+        <div class="dock-item" data-app="terminal" title="终端">
+            <div class="dock-icon terminal-icon">▣</div>
+            <span class="dock-label">终端</span>
+        </div>
+        <div class="dock-item" data-app="files" title="文件管理">
+            <div class="dock-icon files-icon">📁</div>
+            <span class="dock-label">文件管理</span>
+        </div>
+        <div class="dock-item" data-app="monitor" title="活动监视器">
+            <div class="dock-icon monitor-icon">⌁</div>
+            <span class="dock-label">监视器</span>
+        </div>
+        <div class="dock-item" data-app="settings" title="设置">
+            <div class="dock-icon settings-icon">⚙</div>
+            <span class="dock-label">设置</span>
+        </div>
+        <div class="dock-item" data-app="services" title="服务管理">
+            <div class="dock-icon services-icon">🛰</div>
+            <span class="dock-label">服务</span>
+        </div>
+        <div class="dock-item" data-app="trash" title="回收站">
+            <div class="dock-icon trash-icon">🗑</div>
+            <span class="dock-label">回收站</span>
+        </div>
+    </div>
+
+    <!-- 桌面区域 -->
+    <div id="desktop">
+        <!-- 桌面图标区域：仅显示 ~/Desktop 下的真实文件（应用入口在左侧 Dock） -->
+        <div class="desktop-icons"></div>
+        <!-- 窗口容器 -->
+        <div id="windows-container"></div>
+    </div>
+
+    <!-- xterm.js -->
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.7.5/dist/socket.io.min.js"></script>
+    <!-- 应用脚本 -->
+    <script src="/js/desktop.js?v=nodeskicon-v1-20260913"></script>
+    <script src="/js/terminal.js?v=nodeskicon-v1-20260913"></script>
+    <script src="/js/filemanager.js?v=nodeskicon-v1-20260913"></script>
+    <script src="/js/activitymonitor.js?v=nodeskicon-v1-20260913"></script>
+    <script src="/js/settings.js?v=nodeskicon-v1-20260913"></script>
+    <script src="/js/services.js?v=nodeskicon-v1-20260913"></script>
+    <script src="/js/integration_dufs.js?v=nodeskicon-v1-20260913"></script>
+    <script>
+        // 初始化桌面
+        Desktop.init();
+        // 时钟
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').textContent =
+                now.getHours().toString().padStart(2, '0') + ':' +
+                now.getMinutes().toString().padStart(2, '0');
+        }, 1000);
+    </script>
+</body>
+</html>

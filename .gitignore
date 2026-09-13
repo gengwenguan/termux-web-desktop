@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 运行期文件
+server.log
+server.log.*
+server.pid
+server.pid.tmp
+
+# 服务管理白名单（各设备自行生成/定制，不纳入版本控制）
+services.json
+dufs.json
+
+# 密钥（切勿提交）——请从 auth.env.example 复制生成
+auth.env
+
+# 历史快照备份（改用 git 管理）
+*.pre-*
+
+# 本地开发同步脚本（含个人 SSH 别名/机器专属路径，不属于项目本身）
+sync-push.sh
+sync-pull.sh
+
+# 本机杂项
+.DS_Store
