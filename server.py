@@ -77,6 +77,7 @@ LOCK_SECONDS = 15 * 60
 
 LOGIN_HTML = '''<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>Ubuntu Login</title><style>
 *{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Ubuntu,"Segoe UI","PingFang SC",sans-serif}body{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#2c001e,#772953 55%,#dd4814);color:#fff}.panel{width:min(390px,calc(100% - 36px));padding:32px 28px;border-radius:18px;background:rgba(30,18,28,.74);backdrop-filter:blur(16px);box-shadow:0 18px 60px rgba(0,0,0,.42);text-align:center}.avatar{width:86px;height:86px;margin:0 auto 18px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e95420;font-size:36px;font-weight:600}.host{font-size:22px;font-weight:600}.sub{margin:6px 0 24px;color:rgba(255,255,255,.7);font-size:13px}input{width:100%;height:48px;margin:6px 0;padding:0 14px;border:1px solid rgba(255,255,255,.22);border-radius:9px;background:rgba(0,0,0,.26);color:#fff;font-size:15px;outline:none}input:focus{border-color:#e95420;box-shadow:0 0 0 2px rgba(233,84,32,.25)}button{width:100%;height:48px;margin-top:14px;border:0;border-radius:9px;background:#e95420;color:#fff;font-size:15px;font-weight:600;cursor:pointer}.error{min-height:20px;margin-top:12px;color:#ffb4a3;font-size:13px}.note{margin-top:18px;color:rgba(255,255,255,.55);font-size:12px}</style></head>
 <body><main class="panel"><div class="avatar">U</div><div class="host">Termux Ubuntu</div><div class="sub">登录 Web Desktop</div><form method="post" action="/login"><input name="username" autocomplete="username" placeholder="用户名" required autofocus><input name="password" type="password" autocomplete="current-password" placeholder="密码" required><button type="submit">登录</button></form><div class="error">{{ error or '' }}</div><div class="note">会话闲置 30 分钟后失效</div></main></body></html>'''
@@ -92,7 +93,7 @@ def logged_in():
 
 @app.before_request
 def enforce_login():
-    public_paths = {'/login'}
+    public_paths = {'/login', '/favicon.svg', '/favicon.ico'}
     if request.path.startswith('/socket.io') or request.path in public_paths:
         return None
     if not logged_in():
