@@ -177,6 +177,13 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Ubuntu',
 .fm-search { flex: 1; min-width: 120px; }
 .fm-search:focus, .fm-sort:focus { border-color: var(--accent); }
 .fm-sort { min-width: 150px; }
+.fm-hidden-toggle {
+    display: inline-flex; align-items: center; gap: 5px; height: 30px;
+    padding: 0 9px; border-radius: 6px; cursor: pointer;
+    color: #ccc; font-size: 12px; white-space: nowrap; user-select: none;
+    background: #1e1e1e; border: 1px solid rgba(255,255,255,0.12);
+}
+.fm-hidden-toggle input { accent-color: var(--accent); cursor: pointer; margin: 0; }
 .fm-status { margin-left: auto; color: #999; font-size: 12px; white-space: nowrap; }
 .fm-list { flex: 1; overflow-y: auto; padding: 4px; display: flex; flex-direction: column; }
 .fm-list-header {

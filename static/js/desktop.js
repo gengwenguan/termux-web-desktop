@@ -551,13 +551,7 @@ const Desktop = (function () {
         showContextMenu(x, y, [
             { label: '新建文件夹', action: () => createDesktopEntry('dir') },
             { label: '新建文件', action: () => createDesktopEntry('file') },
-            { separator: true },
             { label: '新建终端', action: () => openApp('terminal') },
-            { label: '打开文件', action: () => openApp('files') },
-            { label: '打开活动监视器', action: () => openApp('monitor') },
-            { label: '打开设置', action: () => openApp('settings') },
-            { label: '打开服务管理', action: () => openApp('services') },
-            { label: '打开回收站', action: () => openApp('trash') },
             { separator: true },
             { label: '全选', action: selectAllIcons },
             { label: '自动排列图标', action: autoArrangeIcons },

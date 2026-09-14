@@ -5,6 +5,7 @@
 const FileManagerApp = (function () {
     const instances = new Set();
     let clipboard = null;
+    const HIDDEN_PREF_KEY = 'termux-web-desktop.fm.show-hidden';
 
     function create(initialPath = '~', initialFile = null, options = {}) {
         const container = document.createElement('div');
@@ -33,6 +34,9 @@ const FileManagerApp = (function () {
                     <option value="size-desc">大小（从大到小）</option>
                     <option value="size-asc">大小（从小到大）</option>
                 </select>
+                <label class="fm-hidden-toggle" title="显示以 . 开头的隐藏文件">
+                    <input type="checkbox" class="fm-show-hidden"><span>隐藏文件</span>
+                </label>
                 <button class="fm-btn" data-act="trash">回收站</button>
                 <button class="fm-btn fm-btn-danger" data-act="empty-trash" style="display:none">清空回收站</button>
                 <span class="fm-status">0 个项目</span>
@@ -50,6 +54,7 @@ const FileManagerApp = (function () {
             path: initialPath || '~', selectedPaths: new Set(), load: null,
             history: [], historyIndex: -1, items: [], visibleItems: [],
             anchorIndex: -1, filter: '', sort: 'name-asc', trashMode: !!options.trash,
+            showHidden: localStorage.getItem(HIDDEN_PREF_KEY) === '1',
         };
         container._fmState = state;
         instances.add(state);
@@ -59,6 +64,7 @@ const FileManagerApp = (function () {
         const listBody = container.querySelector('.fm-list-body');
         const searchInput = container.querySelector('.fm-search');
         const sortSelect = container.querySelector('.fm-sort');
+        const hiddenToggle = container.querySelector('.fm-show-hidden');
         const statusLabel = container.querySelector('.fm-status');
         const trashButton = container.querySelector('[data-act=trash]');
 
@@ -106,6 +112,8 @@ const FileManagerApp = (function () {
             container.querySelector('[data-act=new-dir]').disabled = disabled;
             container.querySelector('[data-act=new-file]').disabled = disabled;
             container.querySelector('[data-act=upload]').disabled = disabled;
+            const hiddenLabel = container.querySelector('.fm-hidden-toggle');
+            if (hiddenLabel) hiddenLabel.style.display = disabled ? 'none' : '';
             trashButton.textContent = state.trashMode ? '返回文件' : '回收站';
             // 清空回收站按钮仅在回收站模式显示；空回收站时禁用
             const emptyBtn = container.querySelector('[data-act=empty-trash]');
@@ -125,7 +133,10 @@ const FileManagerApp = (function () {
 
         function applyView() {
             const query = state.filter.trim().toLocaleLowerCase();
-            const items = state.items.filter(item => !query || item.name.toLocaleLowerCase().includes(query));
+            const items = state.items.filter(item => {
+                if (!state.trashMode && !state.showHidden && item.name.startsWith('.')) return false;
+                return !query || item.name.toLocaleLowerCase().includes(query);
+            });
             const [key, direction] = state.sort.split('-');
             const factor = direction === 'desc' ? -1 : 1;
             items.sort((a, b) => {
@@ -396,6 +407,12 @@ const FileManagerApp = (function () {
 
         searchInput.addEventListener('input', () => { state.filter = searchInput.value; applyView(); });
         sortSelect.addEventListener('change', () => { state.sort = sortSelect.value; applyView(); });
+        hiddenToggle.checked = state.showHidden;
+        hiddenToggle.addEventListener('change', () => {
+            state.showHidden = hiddenToggle.checked;
+            localStorage.setItem(HIDDEN_PREF_KEY, state.showHidden ? '1' : '0');
+            applyView();
+        });
         trashButton.addEventListener('click', () => {
             state.trashMode = !state.trashMode;
             state.filter = '';
