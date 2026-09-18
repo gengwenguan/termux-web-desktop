@@ -1,20 +1,29 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Termux Web Desktop 运维脚本：后台启动 / 停止 / 重启 / 状态
-# 用法: ./run.sh {start|stop|restart|status}
+# Termux Web Desktop 运维脚本：后台启动 / 停止 / 重启 / 状态 / 开机自启动
+# 用法: ./run.sh {start|stop|restart|status|enable-autostart|disable-autostart|autostart-status}
 #   start   加载 auth.env，后台运行，写 server.pid，日志入 server.log
 #   stop    根据 server.pid 结束进程
 #   restart 先 stop 再 start
 #   status  查看运行状态
+#   enable-autostart  配置 Termux:Boot 开机启动项
+#   disable-autostart 删除开机启动项
+#   autostart-status 查看开机启动配置
 set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 PID_FILE="$DIR/server.pid"
 LOG_FILE="$DIR/server.log"
+BOOT_DIR="$HOME/.termux/boot"
+BOOT_SCRIPT="$BOOT_DIR/termux-web-desktop"
+BOOT_LOG_FILE="$DIR/boot.log"
 
 is_running() {
     [ -f "$PID_FILE" ] || return 1
     local pid; pid="$(cat "$PID_FILE" 2>/dev/null)"
-    [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
+    [ -n "$pid" ] &&
+        kill -0 "$pid" 2>/dev/null &&
+        [ "$(readlink "/proc/$pid/cwd" 2>/dev/null)" = "$DIR" ] &&
+        tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | grep -qE '(^|[[:space:]])server\.py([[:space:]]|$)'
 }
 
 start() {
@@ -68,10 +77,59 @@ status() {
     fi
 }
 
+termux_boot_installed() {
+    command -v pm >/dev/null 2>&1 &&
+        pm list packages 2>/dev/null | grep -qx 'package:com.termux.boot'
+}
+
+enable_autostart() {
+    mkdir -p "$BOOT_DIR"
+    {
+        echo '#!/data/data/com.termux/files/usr/bin/bash'
+        echo 'sleep 10'
+        printf '%q start >>%q 2>&1\n' "$DIR/run.sh" "$BOOT_LOG_FILE"
+    } > "$BOOT_SCRIPT"
+    chmod 700 "$BOOT_SCRIPT"
+    echo "已配置开机启动: $BOOT_SCRIPT"
+
+    if termux_boot_installed; then
+        echo "已检测到 Termux:Boot。请确认它至少打开过一次，并关闭 Termux 的电池优化。"
+    else
+        echo "警告: 尚未安装 Termux:Boot，启动项暂时不会在开机时执行。"
+        echo "请安装与当前 Termux 来源一致的 Termux:Boot，并至少打开一次。"
+    fi
+}
+
+disable_autostart() {
+    if [ -e "$BOOT_SCRIPT" ]; then
+        rm -f "$BOOT_SCRIPT"
+        echo "已关闭开机启动"
+    else
+        echo "开机启动未配置"
+    fi
+}
+
+autostart_status() {
+    if [ -x "$BOOT_SCRIPT" ]; then
+        echo "启动项: 已配置 ($BOOT_SCRIPT)"
+    else
+        echo "启动项: 未配置"
+    fi
+
+    if termux_boot_installed; then
+        echo "Termux:Boot: 已安装"
+    else
+        echo "Termux:Boot: 未安装"
+    fi
+}
+
 case "${1:-}" in
     start) start ;;
     stop) stop ;;
     restart) stop; start ;;
     status) status ;;
-    *) echo "用法: $0 {start|stop|restart|status}"; exit 1 ;;
+    enable-autostart) enable_autostart ;;
+    disable-autostart) disable_autostart ;;
+    autostart-status) autostart_status ;;
+    *) echo "用法: $0 {start|stop|restart|status|enable-autostart|disable-autostart|autostart-status}"; exit 1 ;;
 esac

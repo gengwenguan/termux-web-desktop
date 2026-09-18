@@ -44,6 +44,48 @@ termux-wake-lock
 # 设置 → 应用 → Termux → 电池 → 无限制
 ```
 
+## 开机自启动
+
+依赖 [Termux:Boot](https://github.com/termux/termux-boot)（与主 Termux 同来源，如 F-Droid）。配置一次即可：
+
+```bash
+# 1. 安装 Termux:Boot 后，先手动打开它一次（授予开机自启动权限）
+# 2. 在项目目录生成启动项
+./run.sh enable-autostart
+
+# 查看状态 / 关闭
+./run.sh autostart-status
+./run.sh disable-autostart
+```
+
+`enable-autostart` 会在 `~/.termux/boot/termux-web-desktop` 写入启动脚本：开机延迟 10 秒后调用 `./run.sh start`，日志记录到 `boot.log`。同时建议关闭 Termux 的电池优化（见上），确保后台不被系统杀掉。
+
+> 若未安装 Termux:Boot 或从未打开过它，启动项不会在开机时执行——命令会给出对应提示。
+
+### 一并托管其它常驻服务（如 sshd）
+
+`~/.termux/boot/` 下每个可执行脚本都会在开机时被 Termux:Boot 逐个执行，因此可以把 sshd 等服务也放进来，统一由开机钩子拉起——这比写在 `~/.bashrc` 里的“登录才触发”更可靠（后者要有人打开 Termux 或 SSH 连入才会执行，手机冷重启后无人登录则不会启动）。
+
+例如新增一个 sshd 启动项：
+
+```bash
+cat > ~/.termux/boot/sshd <<'EOF'
+#!/data/data/com.termux/files/usr/bin/bash
+termux-wake-lock
+sshd
+EOF
+chmod 700 ~/.termux/boot/sshd
+```
+
+要点：
+
+- 每个脚本首行写 shebang `#!/data/data/com.termux/files/usr/bin/bash`，并 `chmod 700`。
+- 脚本应幂等（重复执行不重复起进程）。`sshd` 自身若已监听则不会再起；本项目的 `run.sh start` 已内置运行检测。
+- 开机脚本里 `termux-wake-lock` 可防止 CPU 休眠导致服务被挂起。
+- 迁移后记得从 `~/.bashrc` 删除对应的登录启动片段，避免重复维护。
+
+> dufs 已作为本项目的集成服务由“服务管理”面板统一启停（见下文），无需再单独放入 `~/.termux/boot/`。
+
 ## 项目结构
 
 ```

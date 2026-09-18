@@ -8,6 +8,7 @@ server.log
 server.log.*
 server.pid
 server.pid.tmp
+boot.log
 
 # 服务管理白名单（各设备自行生成/定制，不纳入版本控制）
 services.json
