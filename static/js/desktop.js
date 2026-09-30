@@ -349,7 +349,6 @@ const Desktop = (function () {
         if (!files.length) { showToast('内置应用图标不能删除'); return; }
         const paths = files.map(icon => icon.dataset.path);
         const label = files.length > 1 ? `${files.length} 个项目` : `“${files[0].dataset.name}”`;
-        if (!window.confirm(`确定要删除${label}吗？将移入回收站。`)) return;
         fetch('/api/file/delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -358,7 +357,7 @@ const Desktop = (function () {
             .then(r => r.json())
             .then(res => {
                 if (res.error) throw new Error(res.error);
-                showToast(`已删除${label}（可在回收站恢复）`);
+                showToast(`已将${label}移到回收站`);
                 loadDesktopFiles();
             })
             .catch(e => showToast('删除失败：' + e.message));

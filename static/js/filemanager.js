@@ -342,9 +342,7 @@ const FileManagerApp = (function () {
                     if (single && !first.is_dir) window.open('/api/file/download?path=' + encodeURIComponent(first.path));
                 }},
                 { label: `移到回收站（${selected.length}）`, danger: true, action: () => {
-                    if (confirm(`将选中的 ${selected.length} 个项目移到回收站吗？`)) {
-                        apiPost('/api/file/delete', { paths: selected.map(item => item.path) }, () => refreshAll());
-                    }
+                    apiPost('/api/file/delete', { paths: selected.map(item => item.path) }, () => refreshAll());
                 }},
             ];
             Desktop.showContextMenu(x, y, items);
@@ -490,9 +488,7 @@ const FileManagerApp = (function () {
                 e.preventDefault(); load(state.path, { fromHistory: true });
             } else if (e.key === 'Delete' && selected.length && !state.trashMode) {
                 e.preventDefault();
-                if (confirm(`将选中的 ${selected.length} 个项目移到回收站吗？`)) {
-                    apiPost('/api/file/delete', { paths: selected.map(item => item.path) }, () => refreshAll());
-                }
+                apiPost('/api/file/delete', { paths: selected.map(item => item.path) }, () => refreshAll());
             } else if (e.key === 'Enter' && selected.length === 1 && !state.trashMode) {
                 e.preventDefault(); selected[0].is_dir ? load(selected[0].path) : openFile(selected[0].path);
             } else if (e.key === 'Escape') {
