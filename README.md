@@ -1,40 +1,61 @@
 # Termux Web Desktop
 
-在浏览器中模拟 Ubuntu 桌面，终端命令实际在 Termux 中执行，文件管理操作真实文件系统。
+在浏览器中模拟 Ubuntu 桌面，终端命令在宿主机真实执行，文件管理操作真实文件系统。支持 Android Termux 与标准 Linux。
 
 ![Termux Web Desktop 效果预览](docs/screenshots/desktop.png)
 
 ## 功能
 
-- **终端**：基于 xterm.js + WebSocket + PTY，真实执行 Termux 命令
+- **终端**：基于 xterm.js + WebSocket + PTY，真实执行宿主机命令
 - **文件管理**：浏览、新建、删除（回收站）、重命名、复制、移动、上传、下载、文本编辑、媒体预览
-- **活动监视器**：只读查看整机 CPU/内存/存储/网络/温度/电池与 Termux 可见进程
+- **活动监视器**：只读查看 CPU / 内存 / 存储 / 网络 / 温度 / 电池与当前用户可见进程
 - **设置**：主题色 / 壁纸切换（本地持久化）、当前会话与退出登录、设备与服务信息
-- **服务管理**：白名单式管理 Termux 常驻服务（dufs / sshd 等），一键启动 / 停止 / 重启，实时状态
+- **服务管理**：白名单式管理常驻服务（dufs / sshd 等），一键启动 / 停止 / 重启，实时状态
 - **桌面环境**：Ubuntu 风格，可拖拽/缩放/最小化/最大化窗口，左侧 Dock
 
 ## 安装与运行
 
-### 方式一：启动脚本（推荐）
+### 初始化脚本（推荐）
 
 ```bash
-chmod +x start.sh
+chmod +x start.sh run.sh
 ./start.sh
+./run.sh start
 ```
 
-### 方式二：手动
+脚本会检测 Termux 或标准 Linux、创建项目内的 `.venv`、安装 Python 依赖并交互式生成 `auth.env`。
+
+标准 Linux 需要 Bash、Python 3 和 venv 模块。若系统尚未安装，可先执行对应命令：
+
+```bash
+# Debian / Ubuntu
+sudo apt-get update
+sudo apt-get install -y python3 python3-venv
+
+# Fedora
+sudo dnf install -y python3
+```
+
+Termux 缺少 Python 时，初始化脚本会自动执行：
 
 ```bash
 pkg install python
-pip install flask flask-socketio
-python3 server.py
 ```
 
 启动后在浏览器访问：
-- 手机本机：`http://localhost:5000`
-- 同局域网电脑：`http://<手机IP>:5000`
+- 本机：`http://localhost:5000`
+- 同局域网设备：`http://<设备IP>:5000`
 
-## 后台保活
+常用管理命令：
+
+```bash
+./run.sh start
+./run.sh status
+./run.sh restart
+./run.sh stop
+```
+
+## Termux 后台保活
 
 ```bash
 # 防止 CPU 休眠
@@ -44,7 +65,7 @@ termux-wake-lock
 # 设置 → 应用 → Termux → 电池 → 无限制
 ```
 
-## 开机自启动
+## Termux 开机自启动
 
 依赖 [Termux:Boot](https://github.com/termux/termux-boot)（与主 Termux 同来源，如 F-Droid）。配置一次即可：
 
@@ -61,6 +82,41 @@ termux-wake-lock
 `enable-autostart` 会在 `~/.termux/boot/termux-web-desktop` 写入启动脚本：开机延迟 10 秒后调用 `./run.sh start`，日志记录到 `boot.log`。同时建议关闭 Termux 的电池优化（见上），确保后台不被系统杀掉。
 
 > 若未安装 Termux:Boot 或从未打开过它，启动项不会在开机时执行——命令会给出对应提示。
+
+## 标准 Linux 开机自启动
+
+`run.sh` 的 `enable-autostart` 等命令只管理 Termux:Boot。标准 Linux 建议交给 systemd 等系统服务管理器。
+
+以下是 systemd 用户服务示例。先将其中的 `/absolute/path/termux-web-desktop` 替换为项目绝对路径：
+
+```ini
+# ~/.config/systemd/user/termux-web-desktop.service
+[Unit]
+Description=Termux Web Desktop
+After=network.target
+
+[Service]
+Type=forking
+WorkingDirectory=/absolute/path/termux-web-desktop
+PIDFile=/absolute/path/termux-web-desktop/server.pid
+ExecStart=/absolute/path/termux-web-desktop/run.sh start
+ExecStop=/absolute/path/termux-web-desktop/run.sh stop
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+```
+
+启用服务：
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now termux-web-desktop
+
+# 如需用户未登录时也在开机后启动
+sudo loginctl enable-linger "$USER"
+```
 
 ### 一并托管其它常驻服务（如 sshd）
 
@@ -92,8 +148,8 @@ chmod 700 ~/.termux/boot/sshd
 termux-web-desktop/
 ├── server.py              # Flask 后端（PTY + 文件 API + 系统指标/信息 + 日志轮转）
 ├── requirements.txt
-├── start.sh               # 首次安装：装依赖 + 交互式生成登录凭据 auth.env
-├── run.sh                 # 运行管理：后台 start / stop / restart / status（写 PID + 日志）
+├── start.sh               # 首次安装：创建 .venv、装依赖并生成登录凭据
+├── run.sh                 # 双平台运行管理：后台 start / stop / restart / status
 ├── auth.env.example       # 凭据模板（复制为 auth.env 并填入真实值）
 └── static/
     ├── index.html         # 桌面主页面
@@ -117,9 +173,9 @@ termux-web-desktop/
 ```bash
 cp auth.env.example auth.env
 # 生成密码哈希
-python3 -c "from werkzeug.security import generate_password_hash as g; print(g('你的密码'))"
+.venv/bin/python -c "from werkzeug.security import generate_password_hash as g; print(g('你的密码', method='pbkdf2:sha256:600000'))"
 # 生成会话密钥
-python3 -c "import secrets; print(secrets.token_hex(32))"
+.venv/bin/python -c "import secrets; print(secrets.token_hex(32))"
 # 将上面两个值填入 auth.env 的 WEB_PASSWORD_HASH 与 SESSION_SECRET
 ./run.sh start
 ```
@@ -133,7 +189,7 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 
 ## 服务管理
 
-“服务管理”应用可对**白名单内**的 Termux 常驻服务执行启动 / 停止 / 重启。
+“服务管理”应用可对**白名单内**的常驻服务执行启动 / 停止 / 重启。
 白名单定义在项目根目录的 `services.json`（首次运行自动生成，各设备自行定制，不纳入版本控制）：
 
 ```json
@@ -155,7 +211,7 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 在“服务管理”中点击 dufs 卡片的 **配置** 按钮，打开可视化集成配置页。适合把本项目分发给其它用户后，让他们**从零部署并按需配置** dufs：
 
 - **一键安装**：检测本机是否已装 dufs；未装时从源码仓库用 `cargo` 编译安装（进度实时显示、后台进行）。
-  - **依赖自动补齐**：点击安装时会自动执行 `pkg install -y rust git` 安装编译依赖（Termux 的 `rust` 包已包含 clang/lld/openssl/zlib），**干净的 Termux 环境也能一键部署，无需手动准备工具链**。
+  - **Termux 依赖自动补齐**：点击安装时会自动执行 `pkg install -y rust git`。标准 Linux 不会自动执行 `sudo`；需先通过系统包管理器安装 cargo/rustc 与 git。
   - dufs 使用纯 Rust 的 rustls，不依赖系统 OpenSSL/C 库额外配置。
   - 安装源可用环境变量覆盖：`DUFS_REPO`（默认 `https://github.com/gengwenguan/dufs`）、`DUFS_BRANCH`（默认 `main`）
   - 首次编译在手机上较慢（可能十几分钟），期间可关闭窗口，安装在后台继续。
@@ -170,5 +226,5 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 ## 注意事项
 
 - 终端使用 CDN 加载 xterm.js，首次运行需要联网
-- 服务默认监听 `0.0.0.0:5000`，局域网内任何人都可访问，请勿在公共网络暴露
-- 文件管理操作的是 Termux 真实文件系统，删除操作不可恢复
+- 标准 Linux 默认监听 `0.0.0.0:5000`；Termux 默认监听 `:::5000`。请勿直接暴露到不可信网络
+- 文件管理只能访问当前用户家目录；普通删除会移入应用回收站，清空回收站后不可恢复

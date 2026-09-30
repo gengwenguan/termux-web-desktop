@@ -1473,8 +1473,8 @@ def api_dufs_save():
 def _run_dufs_install():
     """后台线程：确保编译依赖齐全后，从 fork 仓库用 cargo 编译安装 dufs。
 
-    干净的 Termux 通常没有 rust/git，这里在编译前自动 `pkg install -y` 补齐，
-    保证开源用户在全新环境也能一键部署。Termux 的 rust 包已带 clang/lld/openssl 等依赖。
+    Termux 中自动通过 pkg 补齐 rust/git；标准 Linux 不自动提权安装系统包，
+    缺少依赖时给出发行版无关的安装提示。
     """
     def log(line):
         with DUFS_INSTALL_LOCK:
@@ -1509,12 +1509,17 @@ def _run_dufs_install():
         log('\n✅ dufs 安装成功' if ok else '\n❌ dufs 安装失败，请查看以上日志')
 
     try:
-        # 1) 补齐编译依赖：仅安装缺失项（Termux 的 rust 包已带 clang/lld/openssl/zlib）
+        # 1) 补齐编译依赖：Termux 可无交互安装；标准 Linux 由管理员安装系统包。
         missing = [pkg for pkg, binary in (('rust', 'cargo'), ('git', 'git')) if shutil.which(binary) is None]
         if missing:
-            log(f'检测到缺少依赖：{", ".join(missing)}，正在自动安装…')
-            if run(f'pkg install -y {" ".join(missing)}', '安装编译依赖') != 0 or shutil.which('cargo') is None:
-                log('❌ 依赖安装失败。请手动执行：pkg install rust git，或检查网络/软件源。')
+            if shutil.which('pkg') and os.path.isdir('/data/data/com.termux/files/usr'):
+                log(f'检测到缺少依赖：{", ".join(missing)}，正在通过 pkg 自动安装…')
+                if run(f'pkg install -y {" ".join(missing)}', '安装编译依赖') != 0 or shutil.which('cargo') is None:
+                    log('❌ 依赖安装失败。请手动执行：pkg install rust git，或检查网络/软件源。')
+                    return finish(False)
+            else:
+                log(f'❌ 检测到缺少依赖：{", ".join(missing)}。')
+                log('标准 Linux 不会自动执行 sudo；请先用系统包管理器安装 cargo/rustc 和 git，再重新安装。')
                 return finish(False)
         else:
             log('编译依赖已就绪（cargo、git 均可用）')
