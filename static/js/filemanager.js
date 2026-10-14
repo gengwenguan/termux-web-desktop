@@ -19,6 +19,7 @@ const FileManagerApp = (function () {
                 <button class="fm-btn" data-act="refresh" title="刷新">↻</button>
                 <input class="fm-path" type="text" spellcheck="false">
                 <button class="fm-btn" data-act="go" title="跳转">跳转</button>
+                <button class="fm-btn" data-act="open-terminal" title="在当前目录打开终端" aria-label="在当前目录打开终端">▣</button>
                 <button class="fm-btn" data-act="new-dir" title="新建文件夹">📁+</button>
                 <button class="fm-btn" data-act="new-file" title="新建文件">📄+</button>
                 <button class="fm-btn" data-act="upload" title="上传文件">⬆</button>
@@ -108,6 +109,7 @@ const FileManagerApp = (function () {
             container.querySelector('[data-act=up]').disabled = disabled;
             container.querySelector('[data-act=home]').disabled = disabled;
             container.querySelector('[data-act=go]').disabled = disabled;
+            container.querySelector('[data-act=open-terminal]').disabled = disabled;
             pathInput.disabled = disabled;
             container.querySelector('[data-act=new-dir]').disabled = disabled;
             container.querySelector('[data-act=new-file]').disabled = disabled;
@@ -387,6 +389,7 @@ const FileManagerApp = (function () {
                 }},
                 { separator: true },
                 { label: clipboard ? `粘贴 ${clipboard.items.length} 个项目` : '粘贴', disabled: !clipboard, action: () => pasteClipboard(state.path) },
+                { label: '在此打开终端', action: () => TerminalApp.create(state.path) },
                 { label: '刷新', action: () => load(state.path, { fromHistory: true }) },
             ];
             Desktop.showContextMenu(e.clientX, e.clientY, menu);
@@ -433,6 +436,7 @@ const FileManagerApp = (function () {
         });
         container.querySelector('[data-act=home]').addEventListener('click', () => load('~'));
         container.querySelector('[data-act=go]').addEventListener('click', () => load(pathInput.value));
+        container.querySelector('[data-act=open-terminal]').addEventListener('click', () => TerminalApp.create(state.path));
         pathInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') load(pathInput.value); });
         container.querySelector('[data-act=new-dir]').addEventListener('click', () => {
             Desktop.prompt('文件夹名称:', '新建文件夹', (name) => {

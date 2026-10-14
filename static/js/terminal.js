@@ -3,7 +3,7 @@
  * 每个窗口使用独立 Socket.IO 连接和独立 Termux PTY。
  */
 const TerminalApp = (function () {
-    function create() {
+    function create(initialPath = '~') {
         const container = document.createElement('div');
         container.className = 'terminal-container';
         const win = Desktop.createWindow('终端', 'terminal', container, 720, 460);
@@ -33,7 +33,10 @@ const TerminalApp = (function () {
 
         let socketReady = false;
         let closed = false;
-        const socket = io({ transports: ['websocket', 'polling'] });
+        const socket = io({
+            transports: ['websocket', 'polling'],
+            auth: { cwd: initialPath || '~' },
+        });
 
         function resizeTerminal() {
             if (!socketReady || closed) return;

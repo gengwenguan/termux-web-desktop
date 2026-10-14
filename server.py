@@ -64,7 +64,7 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Strict',
     SESSION_COOKIE_SECURE=False,
-    PERMANENT_SESSION_LIFETIME=30 * 60,
+    PERMANENT_SESSION_LIFETIME=48 * 60 * 60,
 )
 socketio = SocketIO(app, async_mode='threading')
 
@@ -80,7 +80,7 @@ LOGIN_HTML = '''<!doctype html>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>Ubuntu Login</title><style>
 *{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Ubuntu,"Segoe UI","PingFang SC",sans-serif}body{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#2c001e,#772953 55%,#dd4814);color:#fff}.panel{width:min(390px,calc(100% - 36px));padding:32px 28px;border-radius:18px;background:rgba(30,18,28,.74);backdrop-filter:blur(16px);box-shadow:0 18px 60px rgba(0,0,0,.42);text-align:center}.avatar{width:86px;height:86px;margin:0 auto 18px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e95420;font-size:36px;font-weight:600}.host{font-size:22px;font-weight:600}.sub{margin:6px 0 24px;color:rgba(255,255,255,.7);font-size:13px}input{width:100%;height:48px;margin:6px 0;padding:0 14px;border:1px solid rgba(255,255,255,.22);border-radius:9px;background:rgba(0,0,0,.26);color:#fff;font-size:15px;outline:none}input:focus{border-color:#e95420;box-shadow:0 0 0 2px rgba(233,84,32,.25)}button{width:100%;height:48px;margin-top:14px;border:0;border-radius:9px;background:#e95420;color:#fff;font-size:15px;font-weight:600;cursor:pointer}.error{min-height:20px;margin-top:12px;color:#ffb4a3;font-size:13px}.note{margin-top:18px;color:rgba(255,255,255,.55);font-size:12px}</style></head>
-<body><main class="panel"><div class="avatar">U</div><div class="host">Termux Ubuntu</div><div class="sub">登录 Web Desktop</div><form method="post" action="/login"><input name="username" autocomplete="username" placeholder="用户名" required autofocus><input name="password" type="password" autocomplete="current-password" placeholder="密码" required><button type="submit">登录</button></form><div class="error">{{ error or '' }}</div><div class="note">会话闲置 30 分钟后失效</div></main></body></html>'''
+<body><main class="panel"><div class="avatar">U</div><div class="host">Termux Ubuntu</div><div class="sub">登录 Web Desktop</div><form method="post" action="/login"><input name="username" autocomplete="username" placeholder="用户名" required autofocus><input name="password" type="password" autocomplete="current-password" placeholder="密码" required><button type="submit">登录</button></form><div class="error">{{ error or '' }}</div><div class="note">会话闲置 48 小时后失效</div></main></body></html>'''
 
 
 def client_key():
@@ -239,6 +239,15 @@ def handle_connect(auth=None):
     env['COLORTERM'] = 'truecolor'
 
     home = os.path.expanduser('~')
+    cwd = home
+    requested_cwd = auth.get('cwd') if isinstance(auth, dict) else None
+    if isinstance(requested_cwd, str) and requested_cwd.strip():
+        try:
+            resolved_cwd = resolve_path(requested_cwd.strip())
+            if os.path.isdir(resolved_cwd):
+                cwd = resolved_cwd
+        except (OSError, ValueError):
+            pass
     proc = subprocess.Popen(
         [shell, '-l'],
         stdin=slave_fd,
@@ -246,7 +255,7 @@ def handle_connect(auth=None):
         stderr=slave_fd,
         preexec_fn=os.setsid,
         env=env,
-        cwd=home,
+        cwd=cwd,
     )
 
     with TERMINAL_LOCK:
@@ -255,6 +264,7 @@ def handle_connect(auth=None):
             'slave': slave_fd,
             'proc': proc,
             'alive': True,
+            'cwd': cwd,
         }
 
     # 后台线程读取 PTY 输出并转发给前端

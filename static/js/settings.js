@@ -83,7 +83,7 @@ const SettingsApp = (function () {
                     <div class="settings-hint">当前登录身份与会话操作。</div>
                     <div class="settings-user">
                         <div class="avatar">U</div>
-                        <div class="who"><span data-field="user">…</span><small>会话闲置 30 分钟后自动失效</small></div>
+                        <div class="who"><span data-field="user">…</span><small>会话闲置 48 小时后自动失效</small></div>
                     </div>
                     <div class="settings-actions">
                         <button class="settings-btn danger" data-action="logout">退出登录</button>
